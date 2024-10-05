@@ -1,21 +1,0 @@
-
-g	java:S112"FDefine and throw a dedicated exception instead of using a generic one.(Ò‚Òéüÿÿÿÿ8€Ç„œä1
-g	java:S112("FDefine and throw a dedicated exception instead of using a generic one.(Ò‚Òéüÿÿÿÿ8Ç„œä1
-g	java:S1121"FDefine and throw a dedicated exception instead of using a generic one.(Ò‚Òéüÿÿÿÿ8Ç„œä1
-g	java:S112;"FDefine and throw a dedicated exception instead of using a generic one.(Ò‚Òéüÿÿÿÿ8Ç„œä1
-d
-java:S2095u"HUse try-with-resources or close this "FileReader" in a "finally" clause.(Œõ8¨Ç„œä1
-Z	java:S106"9Replace this use of System.out or System.err by a logger.(úŒƒÂùÿÿÿÿ8«Ç„œä1
-T	java:S106"9Replace this use of System.out or System.err by a logger.(ö„…8¬Ç„œä1
-T	java:S106"9Replace this use of System.out or System.err by a logger.(›H8¬Ç„œä1
-Z	java:S106&"9Replace this use of System.out or System.err by a logger.(º®ôüÿÿÿÿ8­Ç„œä1
-Z	java:S106/"9Replace this use of System.out or System.err by a logger.(³¡¢éÿÿÿÿÿ8®Ç„œä1
-U	java:S1069"9Replace this use of System.out or System.err by a logger.(ÅÌ¢õ8¯Ç„œä1
-R
-java:S1874C"6Remove this use of "implicitlyWait"; it is deprecated.(Â¾—.8´Ç„œä1
-Z	java:S106Q"9Replace this use of System.out or System.err by a logger.(ÜÈô­úÿÿÿÿ8µÇ„œä1
-Y	java:S125ˆ"<This block of commented-out lines of code should be removed.(í‡Ëµ8¿Ç„œä1
-V	java:S106"9Replace this use of System.out or System.err by a logger.(§ãŒš8ÁÇ„œä1
-[	java:S106·"9Replace this use of System.out or System.err by a logger.(øŠĞÎúÿÿÿÿ8È ˆœä1
-|
-java:S2142Î"^Either re-interrupt this method or rethrow the "InterruptedException" that can be caught here.(ä ¹€8í“…œä1
