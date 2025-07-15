@@ -1,16 +1,22 @@
 package in.fiftytwodays.crm;
 
 import org.openqa.selenium.*;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.io.IOException;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Application to send messages to multiple people using whatsapp<br/>
@@ -63,20 +69,44 @@ public class WhatsAppBatchSender {
         WebDriver driver = new ChromeDriver();
         try {
             driver.get("https://web.whatsapp.com");
+
             // Implicit wait to allow time for elements to load and for manual QR code scanning
-            driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+            driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(120));
+            // Wait for the QR code to disappear and the chat list to be visible
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[@id='pane-side']")));
+
+            System.out.println("WhatsApp Web is ready. Proceeding with automation...");
+
+            try {
+
+                clickContinueOnBanner(driver);
+
+            } catch (NoSuchElementException ex) {
+                System.out.println("Banner not found");
+            }
+
 
             // Wait for manual QR code scan
-            sleep(10000); // Adjust this value based on how quickly you can scan the QR code
-
             for (Contact contact : contacts) {
 
                 String formattedMessage = formatMessage(message, contact);
 
-                sendMessage(driver, formattedMessage, contact);
+                try {
 
-                attachments.forEach(filePath -> sendAttachments(driver, filePath));
+                    sendMessage(driver, formattedMessage, contact);
+
+                    sendAttachments(driver, attachments);
+
+                    closeChat(driver);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    System.err.println("Failed sending message to " + contact.getName());
+                }
             }
+            sleep(30000);
         } catch (Exception e) {
             System.err.println("Error while sending message via WhatsApp - " + e.getMessage());
             e.printStackTrace();
@@ -85,6 +115,12 @@ public class WhatsAppBatchSender {
             sleep(5000); // Adjust this delay as needed
             driver.quit();
         }
+    }
+
+    private static void clickContinueOnBanner(WebDriver driver) {
+        WebElement continueButton = driver.findElement(By.xpath("//button[.//div[text()='Continue']]"));
+        continueButton.click();
+        sleep(500);
     }
 
     private static String formatMessage(String messageToSend, Contact contact) {
@@ -122,23 +158,22 @@ public class WhatsAppBatchSender {
 
     private static void sendMessage(WebDriver driver, String messageToSend, Contact contact) {
 
-        sleep(2000);
-
         // Search for the contact/group
-//        WebElement searchBox = driver.findElement(By.xpath("//div[@title='Search input textbox']"));
         WebElement searchBox = driver.findElement(By.xpath("//p[contains(@class, 'selectable-text') and contains(@class, 'copyable-text')]"));
 
+        searchBox.click();
+        searchBox.sendKeys(Keys.CONTROL + "a");  // Select all text
+        searchBox.sendKeys(Keys.DELETE);  // Delete selected text
+
+        searchBox = driver.findElement(By.xpath("//p[contains(@class, 'selectable-text') and contains(@class, 'copyable-text')]"));
         searchBox.click();
         searchBox.sendKeys(contact.getPhoneNo());
         sleep(2000); // Wait for search results to appear
         searchBox.sendKeys(Keys.ENTER);
 
         // Find the message input box
-//        WebElement messageBox = driver.findElement(By.xpath("//div[@title='Type a message']"));
         WebElement messageBox = driver.findElement(By.xpath("//div[@aria-placeholder='Type a message']"));
 
-//        messageBox.sendKeys(messageToSend);
-        
         // Split the message by new lines
         String[] lines = messageToSend.split("\r\n");
 
@@ -161,30 +196,83 @@ public class WhatsAppBatchSender {
         System.out.println("Message sent successfully!");
     }
 
-    private static void sendAttachments(WebDriver driver, String filePath) {
-        // Click the attachment clip
-        WebElement attachmentBtn = driver.findElement(By.xpath("//div[@title='Attach']"));
-        attachmentBtn.click();
+    private static void sendAttachments(WebDriver driver, List<String> attachments) {
 
-        sleep(2000);
-        WebElement inputFile = null;
-        if (isFileImageOrVideo(filePath)) {
-            inputFile = driver.findElement(By.xpath("//input[@accept='image/*,video/mp4,video/3gpp,video/quicktime']"));
-        } else {
-            inputFile = driver.findElement(By.xpath("//input[@accept='*']"));
+        if (!attachments.isEmpty()) {
+
+            // Split the list into two based on isFileImageOrVideo method
+            Map<Boolean, List<String>> splitFiles = attachments.stream()
+                    .collect(Collectors.partitioningBy(WhatsAppBatchSender::isFileImageOrVideo));
+
+            // Extract the lists
+            List<String> mediaFiles = splitFiles.get(true);
+            Collections.sort(mediaFiles);
+            System.out.println(mediaFiles);
+            List<String> otherFiles = splitFiles.get(false);
+            Collections.sort(otherFiles);
+
+            if (!mediaFiles.isEmpty()) {
+                sendMediaAttachments(driver, mediaFiles);
+            }
+            if (!otherFiles.isEmpty()) {
+                sendOtherAttachments(driver, otherFiles);
+            }
         }
-        inputFile.sendKeys(filePath); // Sending the file path directly to the input element
+        System.out.println("Attachments sent successfully!");
+    }
 
-        // Wait for upload
-        sleep(2000);
+    private static void closeChat(WebDriver driver) {
+        // //span[@data-icon='menu']
+        WebElement menuButton = driver.findElement(By.xpath("//div[@id='main']//button[@title='Menu']"));
+        menuButton.click();
+        sleep(500);
+        WebElement closeButton = driver.findElement(By.xpath("//li[.//span[text()='Close chat']]"));
+        closeButton.click();
+        sleep(500);
+        System.out.println("Chat closed");
+    }
 
-        // Click the send button for the attachment
-        WebElement sendButton = driver.findElement(By.xpath("//span[@data-icon='send']"));
-        sendButton.click();
-
+    private static void sendMediaAttachments(WebDriver driver, List<String> files) {
+        clickAttachmentButton(driver);
+        addMediaAttachment(driver, joinFile(files));
+        clickSendButton(driver);
         sleep(5000);
+        System.out.println("Media attachments sent successfully!");
+    }
 
-        System.out.println("Attachment sent successfully!");
+    private static String joinFile(List<String> files) {
+        return String.join("\n", files);
+    }
+
+    private static void sendOtherAttachments(WebDriver driver, List<String> files) {
+        clickAttachmentButton(driver);
+        addOtherAttachment(driver, joinFile(files)); // Sending the file path directly to the input element
+        clickSendButton(driver);
+        sleep(5000);
+        System.out.println("Other attachments sent successfully!");
+    }
+
+    private static void clickAttachmentButton(WebDriver driver) {
+        // Click the attachment clip
+        WebElement attachmentBtn = driver.findElement(By.xpath("//button[@title='Attach']"));
+        attachmentBtn.click();
+    }
+
+    private static void clickSendButton(WebDriver driver) {
+        // Click the send button for the attachment
+        WebElement sendButton = driver.findElement(By.xpath("//div[@aria-label='Send']"));
+        sendButton.click();
+    }
+
+    private static void addMediaAttachment(WebDriver driver, String filePath) {
+        WebElement inputFile = driver.findElement(By.xpath("//input[@accept='image/*,video/mp4,video/3gpp,video/quicktime']"));
+        inputFile.sendKeys(filePath);
+    }
+
+    private static void addOtherAttachment(WebDriver driver, String filePath) {
+        WebElement inputFile = driver.findElement(By.xpath("//input[@accept='*']"));
+        System.out.println("File Path: " + filePath);
+        inputFile.sendKeys(filePath); // Sending the file path directly to the input element
     }
 
     private static boolean isFileImageOrVideo(String filePath) {
