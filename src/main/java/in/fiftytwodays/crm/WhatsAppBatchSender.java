@@ -118,7 +118,7 @@ public class WhatsAppBatchSender {
     }
 
     private static void clickContinueOnBanner(WebDriver driver) {
-        WebElement continueButton = driver.findElement(By.xpath("//button[.//div[text()='Continue']]"));
+        WebElement continueButton = driver.findElement(By.xpath("//button[.//span[text()='Continue']]"));
         continueButton.click();
         sleep(500);
     }
@@ -159,13 +159,13 @@ public class WhatsAppBatchSender {
     private static void sendMessage(WebDriver driver, String messageToSend, Contact contact) {
 
         // Search for the contact/group
-        WebElement searchBox = driver.findElement(By.xpath("//p[contains(@class, 'selectable-text') and contains(@class, 'copyable-text')]"));
+        WebElement searchBox = driver.findElement(By.xpath("//input[@aria-label='Search or start a new chat']"));
 
         searchBox.click();
         searchBox.sendKeys(Keys.CONTROL + "a");  // Select all text
         searchBox.sendKeys(Keys.DELETE);  // Delete selected text
 
-        searchBox = driver.findElement(By.xpath("//p[contains(@class, 'selectable-text') and contains(@class, 'copyable-text')]"));
+        searchBox = driver.findElement(By.xpath("//input[@aria-label='Search or start a new chat']"));
         searchBox.click();
         searchBox.sendKeys(contact.getPhoneNo());
         sleep(2000); // Wait for search results to appear
@@ -254,18 +254,21 @@ public class WhatsAppBatchSender {
 
     private static void clickAttachmentButton(WebDriver driver) {
         // Click the attachment clip
-        WebElement attachmentBtn = driver.findElement(By.xpath("//button[@title='Attach']"));
+        WebElement attachmentBtn = driver.findElement(By.xpath("//button[@aria-label='Attach']"));
         attachmentBtn.click();
     }
 
     private static void clickSendButton(WebDriver driver) {
         // Click the send button for the attachment
-        WebElement sendButton = driver.findElement(By.xpath("//div[@aria-label='Send']"));
+        WebElement sendButton = driver.findElement(By.xpath("//div[contains(@aria-label, 'Send')]"));
         sendButton.click();
     }
 
     private static void addMediaAttachment(WebDriver driver, String filePath) {
         WebElement inputFile = driver.findElement(By.xpath("//input[@accept='image/*,video/mp4,video/3gpp,video/quicktime']"));
+//        WebElement inputFile = driver.findElement(By.xpath("//button[contains(@aria-label, 'Photos & videos')]"));
+//        inputFile.click();
+//        sleep(5000);
         inputFile.sendKeys(filePath);
     }
 
